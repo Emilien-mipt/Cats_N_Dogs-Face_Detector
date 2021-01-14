@@ -1,3 +1,6 @@
+# Virtual environment
+yolov5_venv/
+
 # Repo-specific GitIgnore ----------------------------------------------------------------------------------------------
 *.jpg
 *.jpeg
