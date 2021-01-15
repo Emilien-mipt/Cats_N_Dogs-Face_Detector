@@ -3,6 +3,8 @@ import time
 from pathlib import Path
 
 import cv2
+import numpy as np
+import os
 import torch
 import torch.backends.cudnn as cudnn
 from numpy import random
@@ -16,12 +18,14 @@ from utils.torch_utils import select_device, load_classifier, time_synchronized
 
 
 def detect(save_img=False):
-    source, weights, view_img, save_txt, imgsz = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size
+    source, weights, view_img, hide_boxes, save_obj, save_txt, imgsz = opt.source, opt.weights, opt.view_img, opt.hide_box, opt.crop, opt.save_txt, opt.img_size
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
         ('rtsp://', 'rtmp://', 'http://'))
 
     # Directories
     save_dir = Path(increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok))  # increment run
+    print("SAVE_DIR", save_dir)
+    print("HIDE: ", hide_boxes)
     (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
     # Initialize
@@ -109,7 +113,24 @@ def detect(save_img=False):
 
                     if save_img or view_img:  # Add bbox to image
                         label = f'{names[int(cls)]} {conf:.2f}'
-                        plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=3)
+                        if not hide_boxes:
+                            plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=3)
+
+                    if save_obj:
+                        crop_path = os.path.join(opt.project, "cropped_" + opt.name)
+                        os.makedirs(crop_path, exist_ok=True)
+                        for k in range(len(det)):
+                            x,y,w,h=int(xyxy[0]), int(xyxy[1]), int(xyxy[2] - xyxy[0]), int(xyxy[3] - xyxy[1])                   
+                            img_ = im0.astype(np.uint8)
+                            crop_img=img_[y:y+ h, x:x + w]                          
+                                
+                            #!!rescale image !!!
+                            filename = label + '{:}.jpg'.format(+1)
+                            filepath = os.path.join(os.path.join(crop_path, filename))
+                            cv2.imwrite(filepath, crop_img) 
+            else:
+                print("There are no detected object")
+                continue
 
             # Print time (inference + NMS)
             print(f'{s}Done. ({t2 - t1:.3f}s)')
@@ -151,6 +172,8 @@ if __name__ == '__main__':
     parser.add_argument('--iou-thres', type=float, default=0.45, help='IOU threshold for NMS')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--view-img', action='store_true', help='display results')
+    parser.add_argument('--hide-box', action='store_true', help='display boxes')
+    parser.add_argument('--crop', action='store_true', help='save cropped detected objects separately')
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
     parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
     parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --class 0, or --class 0 2 3')
