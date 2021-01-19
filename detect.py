@@ -25,7 +25,8 @@ def detect(save_img=False):
     # Directories
     save_dir = Path(increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok))  # increment run
     print("SAVE_DIR", save_dir)
-    print("HIDE: ", hide_boxes)
+    dir_name = str(save_dir).split('/')[-1]
+    print("HIDE BOXES: ", hide_boxes)
     (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
     # Initialize
@@ -117,7 +118,7 @@ def detect(save_img=False):
                             plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=3)
 
                     if save_obj:
-                        crop_path = os.path.join(opt.project, "cropped_" + opt.name)
+                        crop_path = os.path.join(opt.project, dir_name + "_cropped")
                         os.makedirs(crop_path, exist_ok=True)
                         for k in range(len(det)):
                             x,y,w,h=int(xyxy[0]), int(xyxy[1]), int(xyxy[2] - xyxy[0]), int(xyxy[3] - xyxy[1])                   
